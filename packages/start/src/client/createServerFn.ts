@@ -96,6 +96,7 @@ type ServerFnBaseOptions<
   TMiddlewares = unknown,
   TInput = unknown,
 > = {
+  id?: string
   method: TMethod
   validateClient?: boolean
   middleware?: Constrain<TMiddlewares, ReadonlyArray<AnyMiddleware>>
@@ -173,7 +174,8 @@ export function createServerFn<
   TValidator = undefined,
 >(
   options?: {
-    method: TMethod
+    id?: string
+    method?: TMethod
   },
   __opts?: ServerFnBaseOptions<TMethod, TResponse, TMiddlewares, TValidator>,
 ): ServerFnBuilder<TMethod, TResponse, TMiddlewares, TValidator> {
@@ -221,7 +223,7 @@ export function createServerFn<
 
       invariant(
         extractedFn.url,
-        `createServerFn must be called with a function that is marked with the 'use server' pragma. Are you using the @tanstack/start-vite-plugin ?`,
+        `createServerFn must be called with a function that has a 'url' property. Are you using the @tanstack/start-vite-plugin properly?`,
       )
 
       const resolvedMiddleware = [
