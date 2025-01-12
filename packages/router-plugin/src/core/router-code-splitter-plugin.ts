@@ -1,6 +1,7 @@
 import { isAbsolute, join, normalize } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import { logDiff } from '../logger'
 import { getConfig } from './config'
 import {
   compileCodeSplitReferenceRoute,
@@ -57,7 +58,6 @@ plugins: [
 }
 
 const PLUGIN_NAME = 'unplugin:router-code-splitter'
-const JoinedSplitPrefix = splitPrefix + ':'
 
 export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
   Partial<Config> | undefined
@@ -68,15 +68,7 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
   let userConfig = options as Config
 
   const handleSplittingFile = (code: string, id: string) => {
-    if (debug) console.info('Splitting route: ', id)
-
-    if (debug) console.info('')
-    if (debug) console.info('Split Route Input: ', id)
-    if (debug) console.info('')
-    if (debug) console.info(code)
-    if (debug) console.info('')
-    if (debug) console.info('')
-    if (debug) console.info('')
+    if (debug) console.info('Splitting Route: ', id)
 
     const compiledVirtualRoute = compileCodeSplitVirtualRoute({
       code,
@@ -84,19 +76,15 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
       filename: id,
     })
 
-    if (debug) console.info('')
-    if (debug) console.info('Split Route Output: ', id)
-    if (debug) console.info('')
-    if (debug) console.info(compiledVirtualRoute.code)
-    if (debug) console.info('')
-    if (debug) console.info('')
-    if (debug) console.info('')
+    if (debug) {
+      logDiff(code, compiledVirtualRoute.code)
+    }
 
     return compiledVirtualRoute
   }
 
   const handleCompilingFile = (code: string, id: string) => {
-    if (debug) console.info('Handling createRoute: ', id)
+    if (debug) console.info('Compiling Route: ', id)
 
     const compiledReferenceRoute = compileCodeSplitReferenceRoute({
       code,
@@ -104,13 +92,9 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
       filename: id,
     })
 
-    if (debug) console.info('')
-    if (debug) console.info('Handling createRoute output: ', id)
-    if (debug) console.info('')
-    if (debug) console.info(compiledReferenceRoute.code)
-    if (debug) console.info('')
-    if (debug) console.info('')
-    if (debug) console.info('')
+    if (debug) {
+      logDiff(code, compiledReferenceRoute.code)
+    }
 
     return compiledReferenceRoute
   }
@@ -118,17 +102,6 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
   return {
     name: 'router-code-splitter-plugin',
     enforce: 'pre',
-
-    resolveId(source) {
-      if (!userConfig.autoCodeSplitting) {
-        return null
-      }
-
-      if (source.startsWith(splitPrefix + ':')) {
-        return source.replace(splitPrefix + ':', '')
-      }
-      return null
-    },
 
     transform(code, id) {
       if (!userConfig.autoCodeSplitting) {
@@ -161,15 +134,9 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
       return null
     },
 
-    transformInclude(transformId) {
+    transformInclude(id) {
       if (!userConfig.autoCodeSplitting) {
         return undefined
-      }
-
-      let id = transformId
-
-      if (id.startsWith(JoinedSplitPrefix)) {
-        id = id.replace(JoinedSplitPrefix, '')
       }
 
       if (
@@ -191,41 +158,11 @@ export const unpluginRouterCodeSplitterFactory: UnpluginFactory<
 
     rspack(compiler) {
       ROOT = process.cwd()
-
-      compiler.hooks.beforeCompile.tap(PLUGIN_NAME, (self) => {
-        self.normalModuleFactory.hooks.beforeResolve.tap(
-          PLUGIN_NAME,
-          (resolveData: { request: string }) => {
-            if (resolveData.request.includes(JoinedSplitPrefix)) {
-              resolveData.request = resolveData.request.replace(
-                JoinedSplitPrefix,
-                '',
-              )
-            }
-          },
-        )
-      })
-
       userConfig = getConfig(options, ROOT)
     },
 
     webpack(compiler) {
       ROOT = process.cwd()
-
-      compiler.hooks.beforeCompile.tap(PLUGIN_NAME, (self) => {
-        self.normalModuleFactory.hooks.beforeResolve.tap(
-          PLUGIN_NAME,
-          (resolveData: { request: string }) => {
-            if (resolveData.request.includes(JoinedSplitPrefix)) {
-              resolveData.request = resolveData.request.replace(
-                JoinedSplitPrefix,
-                '',
-              )
-            }
-          },
-        )
-      })
-
       userConfig = getConfig(options, ROOT)
 
       if (
