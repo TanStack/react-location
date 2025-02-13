@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import * as fs from 'node:fs'
 
 test('invoking a server function with custom response status code', async ({
   page,
@@ -248,4 +249,6 @@ test("server function's dead code is preserved if already there", async ({
   await expect(page.getByTestId('dead-code-fn-call-response')).toContainText(
     '1',
   )
+
+  await fs.promises.rm('count-effect.txt')
 })
